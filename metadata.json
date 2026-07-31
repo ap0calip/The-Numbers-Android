@@ -1,0 +1,6 @@
+{
+  "name": "The Numbers",
+  "description": "Visual math counting and addition learning app for kids with interactive number pad and character counters.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
