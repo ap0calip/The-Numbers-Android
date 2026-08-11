@@ -230,6 +230,22 @@ fun MainMathScreen(
                         modifier = Modifier.padding(vertical = 2.dp).testTag("menu_best_results")
                     )
 
+                    val isAboutSelected = uiState.mode == AppMode.PRACTICE_QUIZ && uiState.quizScreenState == QuizScreenState.ABOUT
+                    NavigationDrawerItem(
+                        label = { Text("ℹ️ About", fontWeight = if (isAboutSelected) FontWeight.Bold else FontWeight.Medium, color = Color(0xFF222222)) },
+                        selected = isAboutSelected,
+                        onClick = {
+                            viewModel.openAboutFromMenu()
+                            scope.launch { drawerState.close() }
+                        },
+                        colors = NavigationDrawerItemDefaults.colors(
+                            selectedContainerColor = AppYellow,
+                            selectedTextColor = AppTextDark,
+                            unselectedTextColor = Color(0xFF222222)
+                        ),
+                        modifier = Modifier.padding(vertical = 2.dp).testTag("menu_about")
+                    )
+
                     Spacer(modifier = Modifier.weight(1f))
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -303,6 +319,7 @@ fun MainMathScreen(
                                 QuizScreenState.RESULTS -> "📊 Last Results"
                                 QuizScreenState.STICKER_ALBUM -> "🎨 Sticker Album"
                                 QuizScreenState.BEST_RESULTS -> "🏆 Best Results"
+                                QuizScreenState.ABOUT -> "ℹ️ About"
                             }
                         }
 
@@ -698,6 +715,11 @@ fun MainMathScreen(
                                     onBackToPracticeQuiz = { viewModel.returnToQuizSetup() }
                                 )
                             }
+                            com.example.ui.viewmodel.QuizScreenState.ABOUT -> {
+                                AboutScreen(
+                                    onBackToPracticeQuiz = { viewModel.returnToQuizSetup() }
+                                )
+                            }
                         }
                     }
                 }
@@ -709,6 +731,7 @@ fun MainMathScreen(
                     (uiState.quizScreenState == QuizScreenState.STICKER_ALBUM || 
                      uiState.quizScreenState == QuizScreenState.RESULTS ||
                      uiState.quizScreenState == QuizScreenState.BEST_RESULTS ||
+                     uiState.quizScreenState == QuizScreenState.ABOUT ||
                      uiState.quizScreenState == QuizScreenState.SETUP ||
                      uiState.quizScreenState == QuizScreenState.COUNTDOWN))
 

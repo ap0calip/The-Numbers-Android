@@ -265,6 +265,16 @@ fun QuizActiveScreen(
                         testTag = "quiz_answer_input"
                     )
                 }
+
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "💡 Tap the brick to show characters",
+                    color = AppTextDark,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.testTag("quiz_brick_explanation")
+                )
             } else {
                 // Compact Row for Level 0 to 100
                 Row(

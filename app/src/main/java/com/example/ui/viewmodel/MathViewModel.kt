@@ -31,7 +31,8 @@ enum class QuizScreenState {
     ACTIVE,
     RESULTS,
     STICKER_ALBUM,
-    BEST_RESULTS
+    BEST_RESULTS,
+    ABOUT
 }
 
 enum class MathOperator(val symbol: String, val speechName: String, val label: String) {
@@ -625,6 +626,18 @@ class MathViewModel(application: Application) : AndroidViewModel(application) {
             it.copy(
                 mode = AppMode.PRACTICE_QUIZ,
                 quizScreenState = QuizScreenState.BEST_RESULTS
+            )
+        }
+    }
+
+    fun openAboutFromMenu() {
+        audioHelper.playPopSound()
+        countdownJob?.cancel()
+        quizTimerJob?.cancel()
+        _uiState.update {
+            it.copy(
+                mode = AppMode.PRACTICE_QUIZ,
+                quizScreenState = QuizScreenState.ABOUT
             )
         }
     }
