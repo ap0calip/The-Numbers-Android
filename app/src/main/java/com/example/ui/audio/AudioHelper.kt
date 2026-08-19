@@ -14,6 +14,8 @@ class AudioHelper(private val context: Context) : TextToSpeech.OnInitListener {
 
     private var audioManager: AudioManager? = null
     private val appContext: Context = context.applicationContext
+    
+    private val activePlayers = java.util.Collections.synchronizedSet(mutableSetOf<MediaPlayer>())
 
     init {
         val attrContext = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
@@ -45,14 +47,23 @@ class AudioHelper(private val context: Context) : TextToSpeech.OnInitListener {
     private fun playRawSound(resId: Int, volume: Float = 0.3f) {
         if (!soundEnabled) return
         try {
-            val mediaPlayer = MediaPlayer.create(appContext, resId)
-            mediaPlayer?.setVolume(volume, volume)
-            mediaPlayer?.setOnCompletionListener { mp ->
+            val mediaPlayer = MediaPlayer.create(appContext, resId) ?: return
+            activePlayers.add(mediaPlayer)
+            mediaPlayer.setVolume(volume, volume)
+            mediaPlayer.setOnCompletionListener { mp ->
+                activePlayers.remove(mp)
                 try {
                     mp.release()
                 } catch (_: Exception) {}
             }
-            mediaPlayer?.start()
+            mediaPlayer.setOnErrorListener { mp, _, _ ->
+                activePlayers.remove(mp)
+                try {
+                    mp.release()
+                } catch (_: Exception) {}
+                true
+            }
+            mediaPlayer.start()
         } catch (_: Exception) {}
     }
 
@@ -102,6 +113,10 @@ class AudioHelper(private val context: Context) : TextToSpeech.OnInitListener {
 
     fun shutdown() {
         try {
+            activePlayers.forEach { 
+                try { it.release() } catch (_: Exception) {}
+            }
+            activePlayers.clear()
             tts?.stop()
             tts?.shutdown()
         } catch (_: Exception) {}
