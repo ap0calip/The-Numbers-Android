@@ -15,7 +15,7 @@ class AudioHelper(private val context: Context) : TextToSpeech.OnInitListener {
     private var audioManager: AudioManager? = null
     private val appContext: Context = context.applicationContext
     
-    private val activePlayers = java.util.Collections.synchronizedSet(mutableSetOf<MediaPlayer>())
+    private val activePlayers = java.util.concurrent.ConcurrentHashMap.newKeySet<MediaPlayer>()
 
     init {
         val attrContext = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {

@@ -118,7 +118,8 @@ data class MathUiState(
     val term1: String = "10",
     val term2: String = "0",
     val activeField: SelectedField = SelectedField.TERM1,
-    val isEntered: Boolean = true,
+    val isEntered: Boolean = false,
+    val isEditingField: Boolean = false,
     val calculatedSum: Int = 10,
     val mode: AppMode = AppMode.CALCULATOR,
     val operator: MathOperator = MathOperator.ADD,
@@ -152,7 +153,6 @@ class MathViewModel(application: Application) : AndroidViewModel(application) {
 
     private var countdownJob: Job? = null
     private var quizTimerJob: Job? = null
-    private var calculatorTtsJob: Job? = null
 
     init {
         val database = QuizDatabase.getDatabase(application)
@@ -201,21 +201,6 @@ class MathViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun scheduleCalculatorTts() {
-        calculatorTtsJob?.cancel()
-        calculatorTtsJob = viewModelScope.launch {
-            delay(2000)
-            if (_uiState.value.mode == AppMode.CALCULATOR) {
-                val state = _uiState.value
-                val v1 = state.term1.toIntOrNull() ?: 0
-                val v2 = state.term2.toIntOrNull() ?: 0
-                val res = state.calculatedSum
-                val opSpeech = state.operator.speechName
-                audioHelper.speakText("$v1 $opSpeech $v2 equals $res!")
-            }
-        }
-    }
-
     private fun loadBestTime(op: MathOperator, level: MathLevel) {
         viewModelScope.launch {
             val best = repository.getBestTimeSeconds(op.name, level.name)
@@ -227,7 +212,7 @@ class MathViewModel(application: Application) : AndroidViewModel(application) {
         if (_uiState.value.mode != AppMode.CALCULATOR) {
             audioHelper.playPopSound()
         }
-        _uiState.update { it.copy(activeField = field, isEntered = false) }
+        _uiState.update { it.copy(activeField = field, isEditingField = false, isEntered = false) }
     }
 
     fun selectOperator(op: MathOperator) {
@@ -249,14 +234,12 @@ class MathViewModel(application: Application) : AndroidViewModel(application) {
                 operator = op,
                 quizProblem = newProblem,
                 quizUserAnswer = "",
-                isEntered = if (isCalc) true else false,
-                calculatedSum = if (isCalc) res else state.calculatedSum
+                isEntered = false,
+                isEditingField = false,
+                calculatedSum = res
             )
         }
         loadBestTime(op, _uiState.value.level)
-        if (isCalc) {
-            scheduleCalculatorTts()
-        }
     }
 
     fun selectLevel(level: MathLevel) {
@@ -283,14 +266,12 @@ class MathViewModel(application: Application) : AndroidViewModel(application) {
                 term2 = t2,
                 quizProblem = newProblem,
                 quizUserAnswer = "",
-                isEntered = if (isCalc) true else false,
-                calculatedSum = if (isCalc) res else state.calculatedSum
+                isEntered = false,
+                isEditingField = false,
+                calculatedSum = res
             )
         }
         loadBestTime(_uiState.value.operator, level)
-        if (isCalc) {
-            scheduleCalculatorTts()
-        }
     }
 
     fun setShowTimerDuringTest(show: Boolean) {
@@ -362,7 +343,7 @@ class MathViewModel(application: Application) : AndroidViewModel(application) {
         if (state.mode == AppMode.CALCULATOR) {
             val currentVal = if (state.activeField == SelectedField.TERM1) state.term1 else state.term2
 
-            val newValString = if (!state.isEntered || currentVal == "0") {
+            val newValString = if (!state.isEditingField || currentVal == "0") {
                 digit.toString()
             } else {
                 val appended = currentVal + digit.toString()
@@ -385,11 +366,11 @@ class MathViewModel(application: Application) : AndroidViewModel(application) {
                 it.copy(
                     term1 = newTerm1,
                     term2 = newTerm2,
-                    isEntered = true,
+                    isEditingField = true,
+                    isEntered = false,
                     calculatedSum = res
                 )
             }
-            scheduleCalculatorTts()
         } else {
             // Free Practice or Practice Quiz digit input
             val currentAns = state.quizUserAnswer
@@ -405,7 +386,6 @@ class MathViewModel(application: Application) : AndroidViewModel(application) {
         }
 
         if (state.mode == AppMode.CALCULATOR) {
-            calculatorTtsJob?.cancel()
             val activeVal = if (state.activeField == SelectedField.TERM1) state.term1 else state.term2
             val (newTerm1, newTerm2) = if (activeVal == "0") {
                 Pair("0", "0")
@@ -426,6 +406,7 @@ class MathViewModel(application: Application) : AndroidViewModel(application) {
                 it.copy(
                     term1 = newTerm1,
                     term2 = newTerm2,
+                    isEditingField = false,
                     isEntered = false,
                     calculatedSum = res
                 )
@@ -439,7 +420,6 @@ class MathViewModel(application: Application) : AndroidViewModel(application) {
         val state = _uiState.value
 
         if (state.mode == AppMode.CALCULATOR) {
-            calculatorTtsJob?.cancel()
             val val1 = state.term1.toIntOrNull() ?: 0
             val val2 = state.term2.toIntOrNull() ?: 0
             val result = when (state.operator) {
@@ -453,9 +433,10 @@ class MathViewModel(application: Application) : AndroidViewModel(application) {
             audioHelper.speakText("$val1 $opName $val2 equals $result!")
 
             _uiState.update {
-                it.copy(isEntered = true, calculatedSum = result)
+                it.copy(isEntered = true, isEditingField = false, calculatedSum = result)
             }
         } else if (state.mode == AppMode.FREE_PRACTICE) {
+            if (state.quizUserAnswer.isBlank()) return
             val userAns = state.quizUserAnswer.toIntOrNull()
             val target = state.quizProblem
 
@@ -479,6 +460,7 @@ class MathViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         } else if (state.mode == AppMode.PRACTICE_QUIZ && state.quizScreenState == QuizScreenState.ACTIVE) {
+            if (state.quizUserAnswer.isBlank()) return
             val userAns = state.quizUserAnswer.toIntOrNull()
             val target = state.quizProblem
 
@@ -663,7 +645,6 @@ class MathViewModel(application: Application) : AndroidViewModel(application) {
         }
         countdownJob?.cancel()
         quizTimerJob?.cancel()
-        calculatorTtsJob?.cancel()
         _uiState.update { state ->
             val nextProblem = generateNextProblem(state.operator, state.level, state.quizProblem)
             val isCalc = newMode == AppMode.CALCULATOR
@@ -680,13 +661,11 @@ class MathViewModel(application: Application) : AndroidViewModel(application) {
                 quizProblem = nextProblem,
                 quizUserAnswer = "",
                 quizFeedback = null,
-                isEntered = if (isCalc) true else state.isEntered,
+                isEntered = false,
+                isEditingField = false,
                 calculatedSum = if (isCalc) res else state.calculatedSum,
                 quizScreenState = if (newMode == AppMode.PRACTICE_QUIZ) QuizScreenState.SETUP else state.quizScreenState
             )
-        }
-        if (newMode == AppMode.CALCULATOR) {
-            scheduleCalculatorTts()
         }
     }
 
@@ -714,7 +693,6 @@ class MathViewModel(application: Application) : AndroidViewModel(application) {
         }
         countdownJob?.cancel()
         quizTimerJob?.cancel()
-        calculatorTtsJob?.cancel()
         _uiState.update { state ->
             val nextMode = when (state.mode) {
                 AppMode.CALCULATOR -> AppMode.FREE_PRACTICE
@@ -736,13 +714,11 @@ class MathViewModel(application: Application) : AndroidViewModel(application) {
                 quizProblem = nextProblem,
                 quizUserAnswer = "",
                 quizFeedback = null,
-                isEntered = if (isCalc) true else state.isEntered,
+                isEntered = false,
+                isEditingField = false,
                 calculatedSum = if (isCalc) res else state.calculatedSum,
                 quizScreenState = if (nextMode == AppMode.PRACTICE_QUIZ) QuizScreenState.SETUP else state.quizScreenState
             )
-        }
-        if (_uiState.value.mode == AppMode.CALCULATOR) {
-            scheduleCalculatorTts()
         }
     }
 
@@ -826,7 +802,6 @@ class MathViewModel(application: Application) : AndroidViewModel(application) {
         super.onCleared()
         countdownJob?.cancel()
         quizTimerJob?.cancel()
-        calculatorTtsJob?.cancel()
         audioHelper.shutdown()
     }
 }

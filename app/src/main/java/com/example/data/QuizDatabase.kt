@@ -23,7 +23,7 @@ abstract class QuizDatabase : RoomDatabase() {
                     context.applicationContext,
                     QuizDatabase::class.java,
                     "quiz_database"
-                ).fallbackToDestructiveMigration().build()
+                ).fallbackToDestructiveMigration(dropAllTables = true).build()
                 INSTANCE = instance
                 instance
             }
