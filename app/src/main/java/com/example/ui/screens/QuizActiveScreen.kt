@@ -262,7 +262,8 @@ fun QuizActiveScreen(
                         modifier = Modifier
                             .height(54.dp)
                             .width(120.dp),
-                        testTag = "quiz_answer_input"
+                        testTag = "quiz_answer_input",
+                        shakeTrigger = uiState.emptyAnswerShakeTrigger
                     )
                 }
 
@@ -329,7 +330,8 @@ fun QuizActiveScreen(
                         modifier = Modifier
                             .height(54.dp)
                             .width(100.dp),
-                        testTag = "quiz_answer_input"
+                        testTag = "quiz_answer_input",
+                        shakeTrigger = uiState.emptyAnswerShakeTrigger
                     )
                 }
             }

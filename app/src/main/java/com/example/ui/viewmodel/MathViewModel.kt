@@ -127,6 +127,7 @@ data class MathUiState(
     val quizProblem: QuizProblem = QuizProblem(4, 3, MathOperator.ADD),
     val quizUserAnswer: String = "",
     val quizFeedback: String? = null,
+    val emptyAnswerShakeTrigger: Long = 0L,
     val soundEnabled: Boolean = true,
 
     // Practice Quiz Flow State
@@ -436,7 +437,11 @@ class MathViewModel(application: Application) : AndroidViewModel(application) {
                 it.copy(isEntered = true, isEditingField = false, calculatedSum = result)
             }
         } else if (state.mode == AppMode.FREE_PRACTICE) {
-            if (state.quizUserAnswer.isBlank()) return
+            if (state.quizUserAnswer.isBlank()) {
+                audioHelper.playPopSound()
+                _uiState.update { it.copy(emptyAnswerShakeTrigger = System.currentTimeMillis()) }
+                return
+            }
             val userAns = state.quizUserAnswer.toIntOrNull()
             val target = state.quizProblem
 
@@ -460,7 +465,11 @@ class MathViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         } else if (state.mode == AppMode.PRACTICE_QUIZ && state.quizScreenState == QuizScreenState.ACTIVE) {
-            if (state.quizUserAnswer.isBlank()) return
+            if (state.quizUserAnswer.isBlank()) {
+                audioHelper.playPopSound()
+                _uiState.update { it.copy(emptyAnswerShakeTrigger = System.currentTimeMillis()) }
+                return
+            }
             val userAns = state.quizUserAnswer.toIntOrNull()
             val target = state.quizProblem
 

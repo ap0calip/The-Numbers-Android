@@ -299,7 +299,8 @@ fun FreePracticeScreen(
                         modifier = Modifier
                             .height(54.dp)
                             .width(120.dp),
-                        testTag = "free_practice_answer_input"
+                        testTag = "free_practice_answer_input",
+                        shakeTrigger = uiState.emptyAnswerShakeTrigger
                     )
                 }
             } else {
@@ -353,7 +354,8 @@ fun FreePracticeScreen(
                         modifier = Modifier
                             .height(54.dp)
                             .width(100.dp),
-                        testTag = "free_practice_answer_input"
+                        testTag = "free_practice_answer_input",
+                        shakeTrigger = uiState.emptyAnswerShakeTrigger
                     )
                 }
             }

@@ -65,5 +65,24 @@ class ExampleRobolectricTest {
     viewModel.onDigitPressed(4)
     assertFalse(viewModel.uiState.value.isEntered)
   }
+
+  @Test
+  fun `free practice enter with blank answer triggers empty answer shake`() {
+    val app = ApplicationProvider.getApplicationContext<Application>()
+    val viewModel = MathViewModel(app)
+
+    viewModel.setAppMode(AppMode.FREE_PRACTICE)
+    assertEquals(AppMode.FREE_PRACTICE, viewModel.uiState.value.mode)
+    assertEquals("", viewModel.uiState.value.quizUserAnswer)
+    assertEquals(0L, viewModel.uiState.value.emptyAnswerShakeTrigger)
+
+    // Press enter without entering any digits
+    viewModel.onEnterPressed()
+
+    // Shake trigger should be updated to a positive timestamp
+    assertTrue(viewModel.uiState.value.emptyAnswerShakeTrigger > 0L)
+    // Answer is still empty and no incorrect penalty or feedback
+    assertEquals("", viewModel.uiState.value.quizUserAnswer)
+  }
 }
 
